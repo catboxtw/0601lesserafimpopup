@@ -498,7 +498,7 @@
                             body: JSON.stringify(payload)
                         });
                         
-                        alert(`🎉 訂單提交成功！\n\n付款方式: ${this.form.paymentMethod}\n應付總額: HK$${this.totalAmount}\n\n請留意填寫的 Email 獲取付款及後續通知，謝謝您的訂購！`);
+                        alert(`🎉 訂單提交成功！\n\n付款方式: ${this.form.paymentMethod}\n應付總額: HK$${this.totalAmount}\n\n訂購詳情及付款資料已Email到: ${this.form.email.trim()}\n\n我哋收取款項之後會為客人完成訂購，謝謝！`);
                         
                         // 成功後清空表單
                         this.cart = {};
