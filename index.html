@@ -62,7 +62,7 @@
 </head>
 <body class="antialiased min-h-screen pb-40">
 
-    <!-- 頂部導航欄 (新增左上角 Threads 連結) -->
+    <!-- 頂部導航欄 -->
     <div class="max-w-md mx-auto pt-4 px-4 flex justify-between items-center">
         <a href="https://www.threads.net/@852hk.81jp" target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-1 text-xs text-neutral-500 hover:text-neutral-800 transition-colors">
             <!-- Threads SVG Icon -->
@@ -71,12 +71,12 @@
             </svg>
             <span class="font-medium tracking-wider">Threads</span>
         </a>
-        <div></div> <!-- 保持右側平衡 -->
+        <div></div>
     </div>
 
     <div x-data="shopApp()" x-init="init()" class="max-w-md mx-auto px-4 py-2">
         
-        <!-- 中間標題 (分頁名) -->
+        <!-- 中間標題 -->
         <header class="text-center my-6">
             <h1 class="text-xl font-medium tracking-widest text-neutral-800 uppercase">
                 0601 popup Le Sserafim
@@ -95,7 +95,7 @@
         <!-- 主要網頁內容 -->
         <template x-if="!loading">
             <div>
-                <!-- 商品列表 (手機版一行 2 商品圖) -->
+                <!-- 商品列表 -->
                 <div class="grid grid-cols-2 gap-3 mb-8">
                     <template x-for="product in products" :key="product.id">
                         <div class="jp-card p-2.5 flex flex-col justify-between relative overflow-hidden"
@@ -155,7 +155,8 @@
 
                     <div>
                         <label class="block text-xs text-neutral-500 mb-1">聯絡電話 *</label>
-                        <input type="tel" x-model="form.phone" @input="form.phone = form.phone.replace(/\D/g,'').substring(0,8)" placeholder="請輸入可收取SMS嘅手機號碼" class="w-full jp-input px-3 py-2 text-sm">
+                        <!-- 優化：加入 inputmode="numeric" 彈出純數字鍵盤 -->
+                        <input type="tel" inputmode="numeric" x-model="form.phone" @input="form.phone = form.phone.replace(/\D/g,'').substring(0,8)" placeholder="請輸入可收取SMS嘅手機號碼" class="w-full jp-input px-3 py-2 text-sm">
                     </div>
 
                     <div>
@@ -168,7 +169,7 @@
                 <div class="jp-card p-4 space-y-4 mb-6">
                     <h2 class="text-sm font-medium border-l-2 border-neutral-700 pl-2 text-neutral-800 tracking-wider">易寄取收件地址</h2>
                     
-                    <!-- 關鍵字模糊搜尋 (編號或名稱) -->
+                    <!-- 關鍵字模糊搜尋 -->
                     <div>
                         <label class="block text-xs text-neutral-500 mb-1">搜尋門市 (可輸入編號或名稱, 輸入後於下方選擇自提點地址)</label>
                         <input type="text" x-model="addressSearch" placeholder="例如: 7-Eleven / 旺角 / HK001" class="w-full jp-input px-3 py-2 text-sm">
@@ -225,7 +226,7 @@
                     </div>
                 </div>
 
-                <!-- 付款方式 (單選) -->
+                <!-- 付款方式 -->
                 <div class="jp-card p-4 space-y-3 mb-6">
                     <h2 class="text-sm font-medium border-l-2 border-neutral-700 pl-2 text-neutral-800 tracking-wider">付款方式</h2>
                     <div class="flex space-x-6 px-2">
@@ -343,11 +344,13 @@
                     if (this.cart[key]) {
                         delete this.cart[key];
                     } else {
+                        // 🛠️ 修正：必須在這裡把 product.yen 帶進去，後端才拿得到日幣計價
                         this.cart[key] = {
                             id: product.id,
                             name: product.name,
                             sub: sub,
                             price: product.price,
+                            yen: product.yen || 0, 
                             qty: 1
                         };
                     }
@@ -415,6 +418,8 @@
                 resetAddressCascade(level) {
                     if (level === 'type') { this.filter.region = ''; this.filter.district = ''; }
                     if (level === 'region') { this.filter.district = ''; }
+                    // 🛠️ 優化：切換選單時連同關鍵字搜尋一起重設，避免選單過濾出錯
+                    this.addressSearch = ''; 
                     this.selectedAddressIndex = '';
                 },
                 get displayAddress() {
@@ -452,20 +457,30 @@
 
                     this.submitting = true;
 
+                    // 1. 打包商品明細，並在背景計算日幣總額
                     let grouped = {};
+                    let totalJPYAmount = 0; 
+
                     this.cartItems.forEach(item => {
                         if (!grouped[item.name]) grouped[item.name] = [];
                         grouped[item.name].push(`${item.sub} x${item.qty}`);
+                        
+                        // 🛠️ 這裡現在可以正確讀到 item.yen 了！
+                        const itemYen = parseFloat(item.yen) || 0; 
+                        totalJPYAmount += itemYen * item.qty;
                     });
+
                     let itemsSummary = Object.keys(grouped).map(name => {
                         return `${name} (${grouped[name].join(', ')})`;
                     }).join(', ');
 
+                    // 2. 打包 Payload 資料
                     const payload = {
                         itemsSummary: itemsSummary,
                         totalAmount: this.totalAmount,
                         shippingFee: this.shippingFee,
                         paymentMethod: this.form.paymentMethod,
+                        totalJPYAmount: totalJPYAmount, // 背景塞入日幣總額給後端
                         recipientName: this.form.name,
                         recipientPhone: this.form.phone,
                         recipientEmail: this.form.email.trim(),
@@ -485,6 +500,7 @@
                         
                         alert(`🎉 訂單提交成功！\n\n付款方式: ${this.form.paymentMethod}\n應付總額: HK$${this.totalAmount}\n\n請留意填寫的 Email 獲取付款及後續通知，謝謝您的訂購！`);
                         
+                        // 成功後清空表單
                         this.cart = {};
                         this.form.name = '';
                         this.form.phone = '';
