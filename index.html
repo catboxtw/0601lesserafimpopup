@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>0601 Le Sserafim popup 代購</title>
+    <title>代購0601 popup Le Sserafim</title>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Alpine.js for lightweight reactive state matching Japanese clean design -->
@@ -62,10 +62,22 @@
 </head>
 <body class="antialiased min-h-screen pb-40">
 
-    <div x-data="shopApp()" x-init="init()" class="max-w-md mx-auto px-4 py-6">
+    <!-- 頂部導航欄 (新增左上角 Threads 連結) -->
+    <div class="max-w-md mx-auto pt-4 px-4 flex justify-between items-center">
+        <a href="https://www.threads.net/@852hk.81jp" target="_blank" rel="noopener noreferrer" class="inline-flex items-center space-x-1 text-xs text-neutral-500 hover:text-neutral-800 transition-colors">
+            <!-- Threads SVG Icon -->
+            <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <path d="M12 24C5.385 24 0 18.615 0 12S5.385 0 12 0s12 5.385 12 12-5.385 12-12 12zm0-22c-5.514 0-10 4.486-10 10s4.486 10 10 10 10-4.486 10-10-4.486-10-10-10zm2.748 11.232c.112-.556.162-1.071.162-1.583 0-1.879-1.291-3.136-3.235-3.136-2.146 0-3.321 1.487-3.321 3.511 0 2.152 1.258 3.511 3.42 3.511 1.341 0 2.378-.504 2.87-1.391l1.328.775c-.752 1.353-2.32 2.146-4.198 2.146-3.111 0-4.992-1.954-4.992-5.041 0-2.983 1.832-5.041 4.903-5.041 2.81 0 4.73 1.777 4.73 4.659 0 .762-.075 1.52-.224 2.278l-1.444-.219zm-3.109-3.242c1.026 0 1.637.581 1.637 1.487 0 .092-.004.182-.012.271h-3.23c.068-.991.644-1.758 1.605-1.758z"/>
+            </svg>
+            <span class="font-medium tracking-wider">Threads</span>
+        </a>
+        <div></div> <!-- 保持右側平衡 -->
+    </div>
+
+    <div x-data="shopApp()" x-init="init()" class="max-w-md mx-auto px-4 py-2">
         
         <!-- 中間標題 (分頁名) -->
-        <header class="text-center my-8">
+        <header class="text-center my-6">
             <h1 class="text-xl font-medium tracking-widest text-neutral-800 uppercase">
                 0601 popup Le Sserafim
             </h1>
@@ -146,10 +158,9 @@
                         <input type="tel" x-model="form.phone" @input="form.phone = form.phone.replace(/\D/g,'').substring(0,8)" placeholder="請輸入可收取SMS嘅手機號碼" class="w-full jp-input px-3 py-2 text-sm">
                     </div>
 
-                    <!-- 新增的 Email 欄位 -->
                     <div>
                         <label class="block text-xs text-neutral-500 mb-1">電子郵件 *</label>
-                        <input type="email" x-model="form.email" placeholder="請輸入電子郵件地址 (用於接收確認信)" class="w-full jp-input px-3 py-2 text-sm">
+                        <input type="email" x-model="form.email" placeholder="請輸入電子郵件地址 (用於接收付款資料及訂單確認信)" class="w-full jp-input px-3 py-2 text-sm">
                     </div>
                 </div>
 
@@ -297,7 +308,7 @@
                 form: {
                     name: '',
                     phone: '',
-                    email: '', // 初始化 email 欄位
+                    email: '',
                     paymentMethod: 'PayMe'
                 },
                 
@@ -425,7 +436,6 @@
                         alert("聯絡電話格式不正確，請輸入 8 位數字。");
                         return;
                     }
-                    // 電子郵件格式前端驗證
                     if (!this.form.email.trim()) {
                         alert("請輸入電子郵件地址。");
                         return;
@@ -451,7 +461,6 @@
                         return `${name} (${grouped[name].join(', ')})`;
                     }).join(', ');
 
-                    // 將新欄位加入傳送的資料包 (Payload) 
                     const payload = {
                         itemsSummary: itemsSummary,
                         totalAmount: this.totalAmount,
@@ -459,7 +468,7 @@
                         paymentMethod: this.form.paymentMethod,
                         recipientName: this.form.name,
                         recipientPhone: this.form.phone,
-                        recipientEmail: this.form.email.trim(), // 傳入 email
+                        recipientEmail: this.form.email.trim(),
                         pickupType: this.displayAddress.type,
                         pickupCode: this.displayAddress.code,
                         pickupName: this.displayAddress.name,
@@ -474,9 +483,8 @@
                             body: JSON.stringify(payload)
                         });
                         
-                        alert(`🎉 訂單提交成功！已Send Email到客人郵箱。\n\n付款方式: ${this.form.paymentMethod}\n應付總額: HK$${this.totalAmount}\n\n請依Email內資料付款，謝謝您的訂購！`);
+                        alert(`🎉 訂單提交成功！\n\n付款方式: ${this.form.paymentMethod}\n應付總額: HK$${this.totalAmount}\n\n請留意填寫的 Email 獲取付款及後續通知，謝謝您的訂購！`);
                         
-                        // 提交完畢，清空所有資料（包含新加入的 email 欄位）
                         this.cart = {};
                         this.form.name = '';
                         this.form.phone = '';
