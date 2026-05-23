@@ -5,105 +5,194 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>訂單管理後台 - 852hk.81jp</title>
   <style>
+    :root {
+      --bg-color: #f9f9fb;
+      --card-bg: #ffffff;
+      --text-main: #111111;
+      --text-muted: #666666;
+      --border-color: #eeeeee;
+      --primary: #111111;
+      --danger: #ff4d4d;
+      --success: #10b981;
+    }
+    
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background-color: #f8f9fa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-color);
       margin: 0;
-      padding: 30px 15px;
-      color: #333;
+      padding: 20px 12px;
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
     }
+    
+    /* 預設隱藏整個主容器，密碼正確才顯示 */
     .container {
-      max-width: 1000px;
+      display: none; 
+      max-width: 900px;
       margin: 0 auto;
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      background: var(--card-bg);
+      padding: 24px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.03);
     }
+    
+    .header-area {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 16px;
+      margin-bottom: 20px;
+    }
+    
     h2 {
-      margin-top: 0;
+      margin: 0;
+      font-size: 20px;
       font-weight: 600;
-      border-bottom: 2px solid #eee;
-      padding-bottom: 10px;
+      letter-spacing: 0.5px;
     }
+    
+    .refresh-btn {
+      background: none;
+      border: 1px solid #ccc;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .refresh-btn:hover {
+      background: #f2f2f2;
+      border-color: var(--primary);
+    }
+    
+    .table-responsive {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 15px;
-    }
-    th, td {
-      padding: 12px 10px;
       text-align: left;
-      border-bottom: 1px solid #eee;
-      font-size: 14px;
     }
+    
+    th, td {
+      padding: 14px 12px;
+      font-size: 14px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    
     th {
       background-color: #fafafa;
-      color: #666;
+      color: var(--text-muted);
       font-weight: 500;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
+    
     .overdue {
-      color: #ff4d4d;
-      font-weight: bold;
-    }
-    .btn {
-      padding: 6px 12px;
-      border: none;
+      color: var(--danger);
+      font-weight: 600;
+      background-color: #fff5f5;
+      padding: 2px 6px;
       border-radius: 4px;
+      display: inline-block;
+    }
+    
+    .btn {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 6px;
       cursor: pointer;
       font-size: 13px;
-      font-weight: bold;
-      transition: background 0.2s;
+      font-weight: 600;
+      transition: background 0.2s, transform 0.1s;
     }
+    .btn:active {
+      transform: scale(0.97);
+    }
+    
     .btn-unpaid {
-      background-color: #ff4d4d;
+      background-color: var(--danger);
       color: white;
     }
     .btn-unpaid:hover {
       background-color: #e03e3e;
     }
+    
     .btn-paid {
-      background-color: #2ec4b6;
-      color: white;
+      background-color: #f0fdf4;
+      color: var(--success);
+      border: 1px solid #bbf7d0;
       cursor: default;
     }
+    .btn-paid:active {
+      transform: none;
+    }
+    
     .loading {
       text-align: center;
-      padding: 20px;
-      font-size: 16px;
-      color: #666;
+      padding: 40px 20px;
+      font-size: 15px;
+      color: var(--text-muted);
     }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <h2>📋 訂單收款核對後台</h2>
-  <div id="loading" class="loading">正在從試算表載入最新訂單...</div>
-  <table id="orderTable" style="display: none;">
-    <thead>
-      <tr>
-        <th>訂單日期</th>
-        <th>訂單編號</th>
-        <th>金額</th>
-        <th>付款方式</th>
-        <th>收款狀態</th>
-      </tr>
-    </thead>
-    <tbody id="orderList">
-      <!-- 訂單資料會動態插入到這裡 -->
-    </tbody>
-  </table>
+<!-- 加了密碼鎖的主畫面 -->
+<div class="container" id="adminContainer">
+  <div class="header-area">
+    <h2>📋 訂單核對後台 (0601 Popup)</h2>
+    <button class="refresh-btn" onclick="fetchOrders()">🔄 重新整理</button>
+  </div>
+  
+  <div id="loading" class="loading">正在從試算表撈取最新訂單...</div>
+  
+  <div class="table-responsive">
+    <table id="orderTable" style="display: none;">
+      <thead>
+        <tr>
+          <th>訂單日期</th>
+          <th>訂單編號</th>
+          <th>港幣金額</th>
+          <th>付款方式</th>
+          <th>核對狀態</th>
+        </tr>
+      </thead>
+      <tbody id="orderList">
+        <!-- 資料動態生成 -->
+      </tbody>
+    </table>
+  </div>
 </div>
 
 <script>
-  // ⚠️ 請在此處填入你部署完後最新的 GAS 網址 (後面不需要加 action 等參數)
+  // ⚠️ 記得把這裡替換成你部署好、最新的 GAS 網址
   var GAS_API_URL = "https://script.google.com/macros/s/AKfycbx8IXQowEmcIAcn4i7lcxQQFs2FrTV5fgno8tujuBD5u2xW0CjMpXn2GtGsP4BMNEQo/exec";
 
-  // 網頁載入時立刻抓取訂單
+  // 網頁開啟時，第一步先進行密碼驗證
   window.onload = function() {
-    fetchOrders();
+    checkPassword();
   };
+
+  function checkPassword() {
+    var password = prompt("🔒 請輸入管理員密碼：");
+    
+    if (password === "4916") {
+      // 密碼正確，解鎖顯示網頁主體並抓取資料
+      document.getElementById("adminContainer").style.display = "block";
+      fetchOrders();
+    } else {
+      // 密碼錯誤，直接跳出提示並阻斷後續所有動作
+      alert("❌ 密碼錯誤，您沒有權限訪問此頁面！");
+      document.body.innerHTML = "<div style='text-align:center; padding-top:100px; color:#ff4d4d; font-size:18px; font-weight:bold;'>🔒 存取遭拒，頁面已鎖定。</div>";
+    }
+  }
 
   function fetchOrders() {
     document.getElementById("loading").style.display = "block";
@@ -118,13 +207,13 @@
         var tbody = document.getElementById("orderList");
         tbody.innerHTML = "";
 
-        // 將訂單依照時間倒序排列（新訂單在最上面）
+        // 新訂單排在最上面
         data.reverse();
 
         data.forEach(order => {
           var tr = document.createElement("tr");
 
-          // 1. 處理日期與 24 小時紅色警示
+          // 1. 訂單日期 + 24小時未付紅字警告
           var orderDate = new Date(order.date);
           var formattedDate = orderDate.getFullYear() + "-" + 
                               padZero(orderDate.getMonth() + 1) + "-" + 
@@ -133,24 +222,28 @@
                               padZero(orderDate.getMinutes());
           
           var tdDate = document.createElement("td");
-          tdDate.innerText = formattedDate;
+          var spanDate = document.createElement("span");
+          spanDate.innerText = formattedDate;
           
-          // 判斷是否超過 24 小時且尚未收款
           var now = new Date();
-          var timeDiff = now.getTime() - orderDate.getTime();
-          var hoursDiff = timeDiff / (1000 * 60 * 60);
+          var hoursDiff = (now.getTime() - orderDate.getTime()) / (1000 * 60 * 60);
           if (hoursDiff > 24 && order.status !== "已收款") {
-            tdDate.className = "overdue";
+            spanDate.className = "overdue";
+            spanDate.title = "已超過 24 小時未付款！";
           }
+          tdDate.appendChild(spanDate);
           tr.appendChild(tdDate);
 
           // 2. 訂單編號
           var tdId = document.createElement("td");
+          tdId.style.fontFamily = "monospace";
+          tdId.style.fontWeight = "600";
           tdId.innerText = order.id;
           tr.appendChild(tdId);
 
           // 3. 金額
           var tdAmount = document.createElement("td");
+          tdAmount.style.fontWeight = "600";
           tdAmount.innerText = "HK$ " + order.amount;
           tr.appendChild(tdAmount);
 
@@ -159,20 +252,20 @@
           tdPay.innerText = order.payMethod || "未選";
           tr.appendChild(tdPay);
 
-          // 5. 按鈕狀態 (未付為紅色按鈕，點擊轉為綠色已收款)
+          // 5. 收款切換按鈕
           var tdStatus = document.createElement("td");
           var btn = document.createElement("button");
           btn.className = "btn";
           
           if (order.status === "已收款") {
-            btn.innerText = "已收款";
+            btn.innerText = "✓ 已收款亮燈";
             btn.classList.add("btn-paid");
             btn.disabled = true;
           } else {
-            btn.innerText = "未付";
+            btn.innerText = "未付款 (點擊確認)";
             btn.classList.add("btn-unpaid");
             btn.onclick = function() {
-              updateStatus(order.id, btn, tdDate);
+              updateStatus(order.id, btn, spanDate);
             };
           }
           tdStatus.appendChild(btn);
@@ -182,14 +275,13 @@
         });
       })
       .catch(err => {
-        document.getElementById("loading").innerText = "載入訂單失敗，請確認 GAS 權限或網址是否正確。";
+        document.getElementById("loading").innerText = "❌ 載入失敗。請檢查 GAS 網址或試算表分頁名稱是否正確。";
         console.error(err);
       });
   }
 
-  // 變更狀態為已收款
-  function updateStatus(orderId, buttonComponent, dateTdComponent) {
-    if (!confirm("確定收到訂單 " + orderId + " 的款項了嗎？\n系統將會同步發信給客戶通知已付款。")) return;
+  function updateStatus(orderId, buttonComponent, spanDateComponent) {
+    if (!confirm("確認收到訂單 " + orderId + " 的款項？\n確認後系統會自動發出「已付款亮燈確認信」給客戶！")) return;
 
     buttonComponent.innerText = "處理中...";
     buttonComponent.disabled = true;
@@ -204,20 +296,19 @@
     .then(res => res.json())
     .then(result => {
       if (result.result === "success") {
-        buttonComponent.innerText = "已收款";
+        buttonComponent.innerText = "✓ 已收款亮燈";
         buttonComponent.className = "btn btn-paid";
         buttonComponent.onclick = null;
-        // 如果原本是紅字，收款後移除紅字樣式
-        dateTdComponent.className = "";
+        spanDateComponent.className = ""; // 移除過期紅字
       } else {
         alert("更新失敗：" + result.message);
-        buttonComponent.innerText = "未付";
+        buttonComponent.innerText = "未付款 (點擊確認)";
         buttonComponent.disabled = false;
       }
     })
     .catch(err => {
-      alert("連線失敗，請稍後再試。");
-      buttonComponent.innerText = "未付";
+      alert("網路連線失敗，請稍後再試。");
+      buttonComponent.innerText = "未付款 (點擊確認)";
       buttonComponent.disabled = false;
       console.error(err);
     });
